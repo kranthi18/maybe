@@ -1,7 +1,23 @@
 import type { ImageLoaderProps } from 'next/legacy/image'
 
+function isJSON(str: string): boolean {
+    try {
+        JSON.parse(str)
+        return true
+    } catch (e) {
+        return false
+    }
+}
+
 export function enhancerizerLoader({ src, width }: ImageLoaderProps): string {
-    const parsed = JSON.parse(src) as { [key: string]: string | number }
+    let parsed: { [key: string]: string | number }
+
+    if (isJSON(src)) {
+        parsed = JSON.parse(src)
+    } else {
+        parsed = { src }
+    }
+
     parsed.width ??= width
     parsed.height ??= width
 
@@ -10,8 +26,4 @@ export function enhancerizerLoader({ src, width }: ImageLoaderProps): string {
         .join('&')
 
     return `https://enhancerizer.maybe.co/images?${queryString}`
-}
-
-export function s3Loader({ src }: Pick<ImageLoaderProps, 'src'>): string {
-    return `https://assets.maybe.co/images/${src}`
 }
