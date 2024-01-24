@@ -1,6 +1,4 @@
-import { BrowserUtil } from '@maybe-finance/client/shared'
 import { useMemo } from 'react'
-import Image from 'next/legacy/image'
 import type { SharedType } from '@maybe-finance/shared'
 
 type GridImage = {
@@ -9,53 +7,55 @@ type GridImage = {
     institution?: Pick<SharedType.ProviderInstitution, 'provider' | 'providerId'>
 }
 
+const BASE_IMAGES_FOLDER = '/assets/images/financial-institutions/'
+
 const banks: GridImage[] = [
     {
         src: 'chase-bank.png',
         alt: 'Chase Bank',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_56',
+            provider: 'TELLER',
+            providerId: 'chase',
         },
     },
     {
         src: 'capital-one.png',
         alt: 'Capital One Bank',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_128026',
+            provider: 'TELLER',
+            providerId: 'capital_one',
         },
     },
     {
         src: 'wells-fargo.png',
         alt: 'Wells Fargo Bank',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_127991',
+            provider: 'TELLER',
+            providerId: 'wells_fargo',
         },
     },
     {
         src: 'american-express.png',
         alt: 'American Express Bank',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_10',
+            provider: 'TELLER',
+            providerId: 'amex',
         },
     },
     {
         src: 'bofa.png',
         alt: 'Bank of America',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_127989',
+            provider: 'TELLER',
+            providerId: 'bank_of_america',
         },
     },
     {
         src: 'usaa-bank.png',
         alt: 'USAA Bank',
         institution: {
-            provider: 'PLAID',
-            providerId: 'ins_7',
+            provider: 'TELLER',
+            providerId: 'usaa',
         },
     },
 ]
@@ -72,18 +72,10 @@ const brokerages: GridImage[] = [
     {
         src: 'fidelity.png',
         alt: 'Fidelity',
-        institution: {
-            provider: 'FINICITY',
-            providerId: '9913',
-        },
     },
     {
         src: 'vanguard.png',
         alt: 'Vanguard',
-        institution: {
-            provider: 'FINICITY',
-            providerId: '3078',
-        },
     },
     {
         src: 'wealthfront.png',
@@ -144,15 +136,11 @@ export default function InstitutionGrid({
     return (
         <div className="grid grid-cols-2 gap-4">
             {imageList.map((img) => (
-                <Image
-                    className="cursor-pointer hover:opacity-90"
+                <img
+                    className="cursor-pointer hover:opacity-90 w-[193px] h-[116px]"
                     key={img.alt}
-                    loader={BrowserUtil.enhancerizerLoader}
-                    src={`financial-institutions/${img.src}`}
+                    src={`${BASE_IMAGES_FOLDER}${img.src}`}
                     alt={img.alt}
-                    layout="responsive"
-                    width={193}
-                    height={116}
                     onClick={() => {
                         switch (type) {
                             case 'crypto':

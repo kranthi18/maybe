@@ -8,7 +8,6 @@ import type {
     IUserProcessor,
     ISecurityPricingService,
     IUserService,
-    IEmailService,
     IEmailProcessor,
 } from '@maybe-finance/server/features'
 import {
@@ -20,14 +19,14 @@ import {
     AccountQueryService,
     AccountService,
     BalanceSyncStrategyFactory,
-    FinicityETL,
-    FinicityService,
     InstitutionProviderFactory,
     InstitutionService,
     InvestmentTransactionBalanceSyncStrategy,
     LoanBalanceSyncStrategy,
     PlaidETL,
     PlaidService,
+    TellerETL,
+    TellerService,
     SecurityPricingProcessor,
     SecurityPricingService,
     TransactionBalanceSyncStrategy,
@@ -54,8 +53,8 @@ import Redis from 'ioredis'
 import logger from './logger'
 import prisma from './prisma'
 import plaid from './plaid'
-import finicity from './finicity'
-import postmark from './postmark'
+import teller from './teller'
+import { initializeEmailClient } from './email'
 import stripe from './stripe'
 import env from '../../env'
 import { BullQueueEventHandler, WorkerErrorHandlerService } from '../services'
@@ -115,20 +114,21 @@ const plaidService = new PlaidService(
     ''
 )
 
-const finicityService = new FinicityService(
-    logger.child({ service: 'FinicityService' }),
+const tellerService = new TellerService(
+    logger.child({ service: 'TellerService' }),
     prisma,
-    finicity,
-    new FinicityETL(logger.child({ service: 'FinicityETL' }), prisma, finicity),
+    teller,
+    new TellerETL(logger.child({ service: 'TellerETL' }), prisma, teller, cryptoService),
+    cryptoService,
     '',
-    env.NX_FINICITY_ENV === 'sandbox'
+    env.NX_TELLER_ENV === 'sandbox'
 )
 
 // account-connection
 
 const accountConnectionProviderFactory = new AccountConnectionProviderFactory({
     plaid: plaidService,
-    finicity: finicityService,
+    teller: tellerService,
 })
 
 const transactionStrategy = new TransactionBalanceSyncStrategy(
@@ -244,7 +244,7 @@ export const securityPricingProcessor: ISecurityPricingProcessor = new SecurityP
 
 const institutionProviderFactory = new InstitutionProviderFactory({
     PLAID: plaidService,
-    FINICITY: finicityService,
+    TELLER: tellerService,
 })
 
 export const institutionService: IInstitutionService = new InstitutionService(
@@ -262,12 +262,12 @@ export const workerErrorHandlerService = new WorkerErrorHandlerService(
 
 // send-email
 
-export const emailService: IEmailService = new EmailService(
+export const emailService: EmailService = new EmailService(
     logger.child({ service: 'EmailService' }),
-    postmark,
+    initializeEmailClient(),
     {
-        from: env.NX_POSTMARK_FROM_ADDRESS,
-        replyTo: env.NX_POSTMARK_REPLY_TO_ADDRESS,
+        from: env.NX_EMAIL_FROM_ADDRESS,
+        replyTo: env.NX_EMAIL_REPLY_TO_ADDRESS,
     }
 )
 

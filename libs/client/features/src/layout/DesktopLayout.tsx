@@ -16,13 +16,13 @@ import {
     RiFolderOpenLine,
     RiMenuFoldLine,
     RiMenuUnfoldLine,
-    RiMore2Fill,
     RiPieChart2Line,
     RiFlagLine,
     RiArrowRightSLine,
 } from 'react-icons/ri'
 import { Button, Tooltip } from '@maybe-finance/design-system'
 import { MenuPopover } from './MenuPopover'
+import { UpgradePrompt } from '../user-billing'
 import { SidebarOnboarding } from '../onboarding'
 import { useSession } from 'next-auth/react'
 
@@ -190,9 +190,11 @@ export function DesktopLayout({ children, sidebar }: DesktopLayoutProps) {
                         </div>
                     </Tooltip>
 
-                    <Link href="/settings">
-                        <ProfileCircle />
-                    </Link>
+                    <MenuPopover
+                        isHeader={false}
+                        icon={<ProfileCircle />}
+                        placement={'right-end'}
+                    />
                 </div>
             </nav>
 
@@ -227,7 +229,7 @@ export function DesktopLayout({ children, sidebar }: DesktopLayoutProps) {
                                             className="p-3 text-base bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600"
                                             onClick={() => setOnboardingExpanded(true)}
                                         >
-                                            <div className="flex items-center justify-between text-sm mb-1">
+                                            <div className="flex items-center justify-between mb-1 text-sm">
                                                 <p className="text-gray-50">Getting started</p>
                                                 {onboarding.data.isComplete && (
                                                     <button
@@ -235,7 +237,7 @@ export function DesktopLayout({ children, sidebar }: DesktopLayoutProps) {
                                                             e.stopPropagation()
                                                             hideOnboardingWidgetForever()
                                                         }}
-                                                        className="bg-gray-600 hover:bg-gray-500 rounded p-1"
+                                                        className="p-1 bg-gray-600 rounded hover:bg-gray-500"
                                                     >
                                                         Hide
                                                     </button>
@@ -312,7 +314,6 @@ function DefaultContent({
     email,
 }: PropsWithChildren<{ onboarding?: ReactNode; name?: string; email?: string }>) {
     const { addAccount } = useAccountContext()
-
     return (
         <>
             <div className="flex items-center justify-between mb-4">
@@ -337,12 +338,13 @@ function DefaultContent({
 
             {onboarding && onboarding}
 
+            {process.env.STRIPE_API_KEY && <UpgradePrompt />}
+
             <div className="flex items-center justify-between">
                 <div className="text-base">
                     <p data-testid="user-name">{name ?? ''}</p>
                     <p className="text-gray-100">{email ?? ''}</p>
                 </div>
-                <MenuPopover isHeader={false} icon={<RiMore2Fill />} />
             </div>
         </>
     )

@@ -5,8 +5,6 @@ import { DateTime } from 'luxon'
 import { PgService } from '@maybe-finance/server/shared'
 import { AccountQueryService, UserService } from '@maybe-finance/server/features'
 import { resetUser } from './utils/user'
-jest.mock('plaid')
-jest.mock('auth0')
 
 const prisma = new PrismaClient()
 

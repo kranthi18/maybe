@@ -3,10 +3,9 @@ import { Transition } from '@headlessui/react'
 import { RiLoader4Fill, RiLockLine } from 'react-icons/ri'
 import { motion } from 'framer-motion'
 import { Button } from '@maybe-finance/design-system'
-import { BrowserUtil, useAccountContext, useUserAccountContext } from '@maybe-finance/client/shared'
+import { useAccountContext, useUserAccountContext } from '@maybe-finance/client/shared'
 import { ExampleApp } from '../../ExampleApp'
 import { AiOutlineLoading3Quarters as LoadingIcon } from 'react-icons/ai'
-import Image from 'next/legacy/image'
 import type { StepProps } from '../StepProps'
 
 export function AddFirstAccount({ title, onNext }: StepProps) {
@@ -32,7 +31,7 @@ export function AddFirstAccount({ title, onNext }: StepProps) {
                         unmount={false}
                     >
                         <div className="relative">
-                            <h3>{title}</h3>
+                            <h3 className="text-pretty">{title}</h3>
                             <div className="text-base text-gray-50">
                                 <p className="mt-2">
                                     To get the most out of Maybe you need to add your financial
@@ -55,12 +54,10 @@ export function AddFirstAccount({ title, onNext }: StepProps) {
                                     ['Citibank', 'citi'],
                                 ].map(([name, src]) => (
                                     <div key={name} className="h-6">
-                                        <Image
-                                            loader={BrowserUtil.enhancerizerLoader}
-                                            src={`financial-institutions/white/${src}.svg`}
+                                        <img
+                                            src={`/assets/icons/financial-institutions/${src}.svg`}
                                             alt={name}
-                                            height={96}
-                                            width={96}
+                                            className="h-full w-auto"
                                         />
                                     </div>
                                 ))}

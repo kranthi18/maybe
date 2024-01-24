@@ -5,7 +5,6 @@ import type {
     IInsightService,
     ISecurityPricingService,
     IPlanService,
-    IEmailService,
 } from '@maybe-finance/server/features'
 import {
     CryptoService,
@@ -37,11 +36,11 @@ import {
     TransactionBalanceSyncStrategy,
     InvestmentTransactionBalanceSyncStrategy,
     PlaidETL,
-    FinicityService,
-    FinicityETL,
     InstitutionProviderFactory,
-    FinicityWebhookHandler,
     PlaidWebhookHandler,
+    TellerService,
+    TellerETL,
+    TellerWebhookHandler,
     InsightService,
     SecurityPricingService,
     TransactionService,
@@ -51,15 +50,14 @@ import {
     ProjectionCalculator,
     StripeWebhookHandler,
 } from '@maybe-finance/server/features'
-import { SharedType } from '@maybe-finance/shared'
 import prisma from './prisma'
 import plaid, { getPlaidWebhookUrl } from './plaid'
-import finicity, { getFinicityTxPushUrl, getFinicityWebhookUrl } from './finicity'
+import teller, { getTellerWebhookUrl } from './teller'
 import stripe from './stripe'
-import postmark from './postmark'
 import defineAbilityFor from './ability'
 import env from '../../env'
 import logger from '../lib/logger'
+import { initializeEmailClient } from './email'
 
 // shared services
 
@@ -74,12 +72,12 @@ export const queueService = new QueueService(
         : new BullQueueFactory(logger.child({ service: 'BullQueueFactory' }), env.NX_REDIS_URL)
 )
 
-export const emailService: IEmailService = new EmailService(
+export const emailService: EmailService = new EmailService(
     logger.child({ service: 'EmailService' }),
-    postmark,
+    initializeEmailClient(),
     {
-        from: env.NX_POSTMARK_FROM_ADDRESS,
-        replyTo: env.NX_POSTMARK_REPLY_TO_ADDRESS,
+        from: env.NX_EMAIL_FROM_ADDRESS,
+        replyTo: env.NX_EMAIL_REPLY_TO_ADDRESS,
     }
 )
 
@@ -133,20 +131,21 @@ const plaidService = new PlaidService(
     env.NX_CLIENT_URL_CUSTOM || env.NX_CLIENT_URL
 )
 
-const finicityService = new FinicityService(
-    logger.child({ service: 'FinicityService' }),
+const tellerService = new TellerService(
+    logger.child({ service: 'TellerService' }),
     prisma,
-    finicity,
-    new FinicityETL(logger.child({ service: 'FinicityETL' }), prisma, finicity),
-    getFinicityWebhookUrl(),
-    env.NX_FINICITY_ENV === 'sandbox'
+    teller,
+    new TellerETL(logger.child({ service: 'TellerETL' }), prisma, teller, cryptoService),
+    cryptoService,
+    getTellerWebhookUrl(),
+    env.NX_TELLER_ENV === 'sandbox'
 )
 
 // account-connection
 
 const accountConnectionProviderFactory = new AccountConnectionProviderFactory({
     plaid: plaidService,
-    finicity: finicityService,
+    teller: tellerService,
 })
 
 const transactionStrategy = new TransactionBalanceSyncStrategy(
@@ -225,7 +224,7 @@ const userService = new UserService(
 
 const institutionProviderFactory = new InstitutionProviderFactory({
     PLAID: plaidService,
-    FINICITY: finicityService,
+    TELLER: tellerService,
 })
 
 const institutionService: IInstitutionService = new InstitutionService(
@@ -264,18 +263,17 @@ const plaidWebhooks = new PlaidWebhookHandler(
     queueService
 )
 
-const finicityWebhooks = new FinicityWebhookHandler(
-    logger.child({ service: 'FinicityWebhookHandler' }),
-    prisma,
-    finicity,
-    accountConnectionService,
-    getFinicityTxPushUrl()
-)
-
 const stripeWebhooks = new StripeWebhookHandler(
     logger.child({ service: 'StripeWebhookHandler' }),
     prisma,
     stripe
+)
+
+const tellerWebhooks = new TellerWebhookHandler(
+    logger.child({ service: 'TellerWebhookHandler' }),
+    prisma,
+    teller,
+    accountConnectionService
 )
 
 // helper function for parsing JWT and loading User record
@@ -302,10 +300,11 @@ async function getCurrentUser(jwt: NonNullable<Request['user']>) {
 
     return {
         ...user,
-        roles: jwt[SharedType.Auth0CustomNamespace.Roles] ?? [],
-        primaryIdentity: jwt[SharedType.Auth0CustomNamespace.PrimaryIdentity] ?? {},
-        userMetadata: jwt[SharedType.Auth0CustomNamespace.UserMetadata] ?? {},
-        appMetadata: jwt[SharedType.Auth0CustomNamespace.AppMetadata] ?? {},
+        role: jwt.role,
+        // TODO: Replace Auth0 concepts with next-auth
+        primaryIdentity: {},
+        userMetadata: {},
+        appMetadata: {},
     }
 }
 
@@ -331,9 +330,9 @@ export async function createContext(req: Request) {
         queueService,
         plaidService,
         plaidWebhooks,
-        finicityService,
-        finicityWebhooks,
         stripeWebhooks,
+        tellerService,
+        tellerWebhooks,
         insightService,
         marketDataService,
         planService,
